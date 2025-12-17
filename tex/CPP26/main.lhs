@@ -431,7 +431,7 @@ Otherwise, the proof obligation |tyOf (π₂ σ) ≡ A [ π₁ σ ]T| on the rig
 We proceed with other equality constructors:
 \begin{code}
 data _ where
-  η∅   : σ ≡ ∅S
+  η∅   : σ ≡ ∅
   βπ₁  : π₁ (σ , t ∶[ p ]) ≡ σ
   βπ₂  : ... (HL((q : A [ π₁ (σ , t ∶[ p ]) ]T ≡ tyOf t)))
     → π₂ (σ , t ∶[ p ]) ≡ t
