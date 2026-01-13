@@ -136,8 +136,9 @@ module Foo where
     data Sub where
       ∅'
         : Sub Γ ∅
-      _,_∶[_]'
-        : (σ : Sub Γ Δ) (t : Tm Γ) → tyOf t ≡ A [ σ ]T
+      _,_∶[_]ℱ'
+        : ∀ (σ : Sub Γ Δ) (t : Tm Γ) → tyOf t ≡ A [ σ ]T
+        → Ford (tyOf t)
         → Sub Γ (Δ , A)
       idS' : Sub Γ Γ
       _∘'_
@@ -146,8 +147,9 @@ module Foo where
       π₁'
         : Sub Γ (Δ , A)
         → Sub Γ Δ
-      βπ₁'
-        : (σ : Sub Γ Δ) (t : Tm Γ) (p : tyOf t ≡ A [ σ ]T)
+      βπ₁ℱ'
+        : ∀ (σ : Sub Γ Δ) (t : Tm Γ) (p : tyOf t ≡ A [ σ ]T)
+        → Ford (tyOf t)
         → π₁ (σ , t ∶[ p ]) ≡ σ
       idS∘'_
         : (σ : Sub Γ Δ)
@@ -158,9 +160,12 @@ module Foo where
       assocS'
         : (σ : Sub Γ Δ) (τ : Sub Δ Θ) (γ : Sub Θ Ξ)
         → (γ ∘ τ) ∘ σ ≡ γ ∘ (τ ∘ σ)
-      ,∘'
-        : (σ : Sub Δ Θ) (t : Tm Δ) (τ : Sub Γ Δ) (p : tyOf t ≡ A [ σ ]T)
+      ,∘ℱ'
+        : ∀ (σ : Sub Δ Θ) (t : Tm Δ) (τ : Sub Γ Δ) 
+          (p : tyOf t ≡ A [ σ ]T)
           (q : tyOf (t [ τ ]t) ≡ A [ σ ∘ τ ]T)
+        → Ford (tyOf t)
+        → Ford (tyOf (t [ τ ]t))
         → (σ , t ∶[ p ]) ∘ τ ≡ (σ ∘ τ , t [ τ ]t ∶[ q ])
       η∅'
         : (σ : Sub Γ ∅)
@@ -189,6 +194,13 @@ module Foo where
         → t [ τ ]t [ σ ]t ≡ t [ τ ∘ σ ]t
       Tm-is-set
         : isSet (Tm Γ)
+
+    pattern _,_∶[_]' σ t p = (σ , t ∶[ p ]ℱ') ford
+    pattern βπ₁' σ t p    = βπ₁ℱ' σ t p ford
+    pattern ,∘' σ t τ p q = ,∘ℱ' σ t τ p q ford ford
+
+    pattern βπ₁≡ σ t p i = βπ₁ℱ' σ t p ford i
+    pattern ,∘≡  σ t τ p q i = ,∘ℱ' σ t τ p q ford ford i
 
     ∅       = ∅'
     _,_     = _,'_

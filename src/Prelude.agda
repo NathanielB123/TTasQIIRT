@@ -117,3 +117,7 @@ transportRefl³ a =
     ≡⟨ transportRefl a ⟩
   a
     ∎
+
+-- Matching on |ford| ensures |x| is considered a sub-pattern
+data Ford {A : Set ℓ} : A → Set ℓ where
+  ford : {x : A} → Ford x
