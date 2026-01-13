@@ -6,7 +6,7 @@ module Theory.SC.QIIRT-tyOf.Syntax where
 
 module Foo where
   module _ where -- delimit the scope of forward declarations
-    infixl 8  _[_] _[_]T _[_]t
+    infixl 8  _[_] _[_]T _[_]t _[_]t'
     infixr 10 _∘_
     infixl 5 _,_∶[_]'
     infixl 4  _,_ _,_∶[_]
@@ -139,6 +139,7 @@ module Foo where
       _,_∶[_]ℱ'
         : ∀ (σ : Sub Γ Δ) (t : Tm Γ) → tyOf t ≡ A [ σ ]T
         → Ford (tyOf t)
+        → Ford (A [ σ ]T)
         → Sub Γ (Δ , A)
       idS' : Sub Γ Γ
       _∘'_
@@ -165,26 +166,35 @@ module Foo where
           (p : tyOf t ≡ A [ σ ]T)
           (q : tyOf (t [ τ ]t) ≡ A [ σ ∘ τ ]T)
         → Ford (tyOf t)
+        → Ford (t [ τ ]t)
         → Ford (tyOf (t [ τ ]t))
+        → Ford (A [ σ ]T)
+        → Ford (A [ σ ∘ τ ]T)
         → (σ , t ∶[ p ]) ∘ τ ≡ (σ ∘ τ , t [ τ ]t ∶[ q ])
       η∅'
         : (σ : Sub Γ ∅)
         → σ ≡ ∅S
-      ηπ'
+      ηπℱ'
         : (σ : Sub Γ (Δ , A))
+        → Ford (A [ π₁ σ ])
+        → Ford (π₂ σ)
         → σ ≡ (π₁ σ , π₂ σ ∶[ tyOfπ₂ σ ])
       Sub-is-set
         : isSet (Sub Γ Δ)
 
     data Tm where
-      _[_] : (t : Tm Δ)(σ : Sub Γ Δ)
+      _[_]ℱ' : (t : Tm Δ)(σ : Sub Γ Δ)
+        → Ford (tyOf t)
+        → Ford (tyOf t [ σ ])
         → Tm Γ
       π₂'
         : Sub Γ (Δ , A)
         → Tm Γ
-      βπ₂'
+      βπ₂ℱ'
         : (σ : Sub Γ Δ) (t : Tm Γ) (p : tyOf t ≡ A [ σ ]T)
         → (q : A [ π₁ (σ , t ∶[ p ]) ]T ≡ tyOf t)
+        → Ford (tyOf t)
+        → Ford (A [ σ ]T)
         → π₂ (σ , t ∶[ p ]) ≡ t
       [idS]t'
         : (t : Tm Γ)
@@ -195,17 +205,22 @@ module Foo where
       Tm-is-set
         : isSet (Tm Γ)
 
-    pattern _,_∶[_]' σ t p = (σ , t ∶[ p ]ℱ') ford
-    pattern βπ₁' σ t p    = βπ₁ℱ' σ t p ford
-    pattern ,∘' σ t τ p q = ,∘ℱ' σ t τ p q ford ford
+    pattern _[_]t' t σ = (t [ σ ]ℱ') ford ford
+    pattern _,_∶[_]' σ t p = (σ , t ∶[ p ]ℱ') ford ford
+    pattern βπ₁' {A} σ t p    = βπ₁ℱ' {A = A} σ t p ford
+    pattern βπ₂' {A} σ t p q  = βπ₂ℱ' {A = A} σ t p q ford ford
+    pattern ,∘' σ t τ p q = ,∘ℱ' σ t τ p q ford ford ford ford ford
+    pattern ηπ' {Γ} {Δ} {A} σ = ηπℱ' {Γ} {Δ} {A} σ ford ford
 
-    pattern βπ₁≡ σ t p i = βπ₁ℱ' σ t p ford i
-    pattern ,∘≡  σ t τ p q i = ,∘ℱ' σ t τ p q ford ford i
+    pattern βπ₁≡ {A} σ t p i = βπ₁ℱ' {A = A} σ t p ford i
+    pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford i
+    pattern ,∘≡  σ t τ p q i = ,∘ℱ' σ t τ p q ford ford ford ford ford i
+    pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford i
 
     ∅       = ∅'
     _,_     = _,'_
     _[_]T   = _[_]
-    _[_]t   = _[_]
+    _[_]t   = _[_]t'
     U       = U'
     U[]     = U[]'
     ∅S      = ∅'
@@ -227,9 +242,9 @@ module Foo where
     [idS]t  = [idS]t'
     [∘]t    = [∘]t'
 
-    tyOf (t [ σ ])           = (tyOf t) [ σ ]T
+    tyOf (t [ σ ]t')         = (tyOf t) [ σ ]T
     tyOf (π₂' {Γ} {Δ} {A} σ) = A [ π₁ σ ]T
-    tyOf (βπ₂' σ t p q i)    = q i
+    tyOf (βπ₂≡ σ t p q i)    = q i
     tyOf ([idS]t' t i)       = [idS]T {A = tyOf t} i
     tyOf ([∘]t' t σ τ i)     = [∘]T (tyOf t) σ τ i
     tyOf (Tm-is-set t u p q i j) =
@@ -289,6 +304,7 @@ open Foo public
   ; _,'_ to _,_
   ; U' to U
   ; U[]' to U[]
+  ; _[_]t' to _[_]t
   ; _,_∶[_]' to _,_∶[_]
   ; idS' to idS
   ; _∘'_ to _∘_
@@ -317,22 +333,22 @@ open Var
     ≡⟨ cong π₁ (cong (_∘ σ) (ηπ τ)) ⟩
   π₁ ((π₁ τ , π₂ τ ∶[ refl ]) ∘ σ)
     ≡⟨ cong π₁ (,∘ (π₁ τ) (π₂ τ) σ refl _) ⟩
-  π₁ (π₁ τ ∘ σ , π₂ τ [ σ ] ∶[ _ ])
-    ≡⟨ βπ₁ (π₁ τ ∘ σ) (π₂ τ [ σ ]) ([∘]T _ _ _) ⟩
+  π₁ (π₁ τ ∘ σ , π₂ τ [ σ ]t ∶[ _ ])
+    ≡⟨ βπ₁ (π₁ τ ∘ σ) (π₂ τ [ σ ]t) ([∘]T _ _ _) ⟩
   π₁ τ ∘ σ
     ∎
 
 π₂∘
   : (τ : Sub Δ (Θ , A))(σ : Sub Γ Δ)
-  → π₂ (τ ∘ σ) ≡ (π₂ τ) [ σ ]
+  → π₂ (τ ∘ σ) ≡ (π₂ τ) [ σ ]t
 π₂∘ {Θ = Θ} {A} τ σ =
   π₂ (τ ∘ σ)
     ≡⟨ cong π₂ (cong (_∘ σ) (ηπ τ)) ⟩
   π₂ ((π₁ τ , π₂ τ ∶[ refl ]) ∘ σ)
     ≡⟨ cong π₂ (⟨,∘⟩ (π₁ τ) (π₂ τ) σ refl) ⟩
-  π₂ (π₁ τ ∘ σ , π₂ τ [ σ ] ∶[ _ ])
-    ≡⟨ ⟨βπ₂⟩ (π₁ τ ∘ σ) (π₂ τ [ σ ]) _ ⟩
-  π₂ τ [ σ ]
+  π₂ (π₁ τ ∘ σ , π₂ τ [ σ ]t ∶[ _ ])
+    ≡⟨ ⟨βπ₂⟩ (π₁ τ ∘ σ) (π₂ τ [ σ ]t) _ ⟩
+  π₂ τ [ σ ]t
     ∎
 
 π₁idS
@@ -348,13 +364,13 @@ open Var
 
 π₂idS
   : (σ : Sub Γ (Δ , A))
-  → π₂ σ ≡ π₂ idS [ σ ]
+  → π₂ σ ≡ π₂ idS [ σ ]t
 π₂idS σ =
   π₂ σ
     ≡⟨ cong π₂ (sym (idS∘ σ)) ⟩
   π₂ (idS ∘ σ)
     ≡⟨ π₂∘ _ _ ⟩
-  π₂ idS [ σ ]
+  π₂ idS [ σ ]t
     ∎
 
 wk∘
@@ -385,7 +401,7 @@ vz : Tm (Γ , A)
 vz = π₂ idS
 
 vs : Tm Γ → Tm (Γ , B)
-vs x = x [ wk ]
+vs x = x [ wk ]t
 -- vs (vs ... (vs vz) ...) = π₂ idS [ π₁ idS ]tm .... [ π₁ idS ]tm
 
 module CtxPath where
