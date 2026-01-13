@@ -209,12 +209,12 @@ module Foo where
     pattern _,_∶[_]' σ t p = (σ , t ∶[ p ]ℱ') ford ford
     pattern βπ₁' {A} σ t p    = βπ₁ℱ' {A = A} σ t p ford
     pattern βπ₂' {A} σ t p q  = βπ₂ℱ' {A = A} σ t p q ford ford
-    pattern ,∘' σ t τ p q = ,∘ℱ' σ t τ p q ford ford ford ford ford
+    pattern ,∘' {A} σ t τ p q = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford
     pattern ηπ' {Γ} {Δ} {A} σ = ηπℱ' {Γ} {Δ} {A} σ ford ford
 
     pattern βπ₁≡ {A} σ t p i = βπ₁ℱ' {A = A} σ t p ford i
     pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford i
-    pattern ,∘≡  σ t τ p q i = ,∘ℱ' σ t τ p q ford ford ford ford ford i
+    pattern ,∘≡  {A} σ t τ p q i = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford i
     pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford i
 
     ∅       = ∅'

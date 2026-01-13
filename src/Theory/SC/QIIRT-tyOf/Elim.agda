@@ -1,4 +1,4 @@
-{-# OPTIONS --hidden-argument-puns --no-require-unique-meta-solutions #-} --show-implicit 
+{-# OPTIONS --hidden-argument-puns --no-require-unique-meta-solutions --show-implicit #-} --show-implicit 
 open import Prelude
 
 open import Theory.SC.QIIRT-tyOf.IxModel
@@ -13,6 +13,7 @@ open M.Var
 open import Theory.SC.QIIRT-tyOf.Syntax
 open Var
 
+-- {-# TERMINATING #-}
 elimCtx  : (Γ : Ctx) → Ctx∙ Γ
 elimTy   : (A : Ty Γ) → Ty∙ (elimCtx Γ) A
 elimTm   : (t : Tm Γ) → Tm∙ (elimCtx Γ) t
@@ -85,13 +86,30 @@ elimSub (βπ₁≡ σ t p i)
 elimSub ((idS∘ σ) i)  = (idS∘∙ elimSub σ) i
 elimSub ((σ ∘idS) i)  = (elimSub σ ∘idS∙) i
 elimSub (assocS σ τ γ i) = assocS∙ (elimSub σ) (elimSub τ) (elimSub γ) i
-elimSub (,∘≡ σ t τ p q i) =
-  ,∘∙ (elimSub σ) (elimTm t) (elimSub τ) p 
+elimSub (,∘≡ {A} σ t τ p q i) =
+  ,∘∙ {A = A} {A∙ = elimTy A} (elimSub σ) (elimTm t) (elimSub τ) p 
       (elimTyOf {A = _ [ σ ]} t ford p) q 
-      -- First termination error that I am unsure how to fix...
-      {!elimTyOf {A = _ [ σ ∘ τ ]} (t [ τ ]t) (ford {x = tyOf t [ τ ]}) q!} i
+      -- Inlining 'elimTyOf' here helps to ensure termination
+      -- (elimTyOf {A = A [ σ ∘ τ ]} (t [ τ ]t) ford q)
+      (beginTy
+      tyOf∙ (elimTm t [ elimSub τ ]t∙)
+        ≡Ty[]⟨ elimTyOf' (t [ τ ]t) ford ⟩
+      elimTy (tyOf t) [ elimSub τ ]T∙
+        ≡Ty[ q ]⟨ cong elimTy q ⟩
+      elimTy A [ elimSub σ ∘∙ elimSub τ ]T∙
+        ∎) 
+      i
+
 elimSub (η∅ σ i) = η∅∙ (elimSub σ) i
 elimSub (ηπ≡ {Γ} {Δ} {A} σ i) = {!!}
+  -- = go i where
+  -- go = beginSub[ ηπ σ ] -- the index cannot be inferred by unification
+  --   (elimSub σ
+  --     ≡Sub[ ηπ σ ]⟨ ηπ∙ (elimSub σ) ⟩
+  --   π₁∙ (elimSub σ) , π₂∙ (elimSub σ) ∶[ refl , tyOfπ₂∙ (elimSub σ) ]∙
+  --     ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub σ) , π₂∙ (elimSub σ) ∶[ refl ,_]∙) (Ty∙-is-set _ _ _ _ _ _) ⟩
+  --   π₁∙ (elimSub σ) , elimTm (π₂ σ) ∶[ refl , elimTyOf {A = A [ π₁ σ ]} (π₂ σ) ford refl ]∙
+  --     ∎)
   -- = (beginSub[ ηπ σ ] -- the index cannot be inferred by unification
   -- (elimSub σ
   --   ≡Sub[ ηπ σ ]⟨ ηπ∙ (elimSub σ) ⟩
