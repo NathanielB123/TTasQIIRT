@@ -1,4 +1,4 @@
-{-# OPTIONS --hidden-argument-puns --no-require-unique-meta-solutions --show-implicit #-} --show-implicit 
+{-# OPTIONS --hidden-argument-puns --no-require-unique-meta-solutions #-} --show-implicit 
 open import Prelude
 
 open import Theory.SC.QIIRT-tyOf.IxModel
@@ -76,7 +76,7 @@ elimTm {Γ = Γ} (Tm-is-set t u p q i j) =
     (λ j → elimTm u) i j
 
 elimSub ∅              = ∅S∙
-elimSub {Γ = Γ} {Δ = Δ} ((_,_∶[_]ℱ' σ t p) ford ford) =
+elimSub {Γ = Γ} {Δ = Δ} (σ , t ∶[ p ]) =
   elimSub σ , elimTm t ∶[ p , elimTyOf {A = _ [ σ ]} t ford p ]∙
 elimSub idS            = idS∙ 
 elimSub (σ ∘ τ)       = elimSub σ ∘∙ elimSub τ
@@ -101,23 +101,34 @@ elimSub (,∘≡ {A} σ t τ p q i) =
       i
 
 elimSub (η∅ σ i) = η∅∙ (elimSub σ) i
-elimSub (ηπ≡ {Γ} {Δ} {A} σ i) = {!!}
-  -- = go i where
-  -- go = beginSub[ ηπ σ ] -- the index cannot be inferred by unification
-  --   (elimSub σ
-  --     ≡Sub[ ηπ σ ]⟨ ηπ∙ (elimSub σ) ⟩
-  --   π₁∙ (elimSub σ) , π₂∙ (elimSub σ) ∶[ refl , tyOfπ₂∙ (elimSub σ) ]∙
-  --     ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub σ) , π₂∙ (elimSub σ) ∶[ refl ,_]∙) (Ty∙-is-set _ _ _ _ _ _) ⟩
-  --   π₁∙ (elimSub σ) , elimTm (π₂ σ) ∶[ refl , elimTyOf {A = A [ π₁ σ ]} (π₂ σ) ford refl ]∙
-  --     ∎)
-  -- = (beginSub[ ηπ σ ] -- the index cannot be inferred by unification
-  -- (elimSub σ
-  --   ≡Sub[ ηπ σ ]⟨ ηπ∙ (elimSub σ) ⟩
-  -- π₁∙ (elimSub σ) , π₂∙ (elimSub σ) ∶[ refl , tyOfπ₂∙ (elimSub σ) ]∙
-  --   ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub σ) , π₂∙ (elimSub σ) ∶[ refl ,_]∙) (Ty∙-is-set _ _ _ _ _ _) ⟩
-  -- π₁∙ (elimSub σ) , elimTm (π₂ σ) ∶[ refl , elimTyOf (π₂ σ) ford refl ]∙
-  --   ∎)) i
-  -- (beginSub[ ηπℱ' σ ford ford ] {!   !}) i
+elimSub (ηπℱ' {Γ} {Δ} {A} σ ford (ford {x = .(A [ π₁ σ ])}) ford ford i)
+  = let 
+        elimTyOf-π₂ : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy A [ π₁∙ (elimSub σ) ]T∙
+        elimTyOf-π₂ = beginTy[ refl ]
+          tyOf∙ (elimTm (π₂ σ))
+            ≡Ty[]⟨ tyOfπ₂∙ (elimSub {Δ = Δ , A} σ) ⟩
+          elimTy A [ π₁∙ (elimSub {Δ = Δ , A} σ) ]T∙
+            ∎
+
+        elimTyOf-refl : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy A [ elimSub (π₁ σ) ]T∙
+        elimTyOf-refl = beginTy
+          tyOf∙ (elimTm (π₂ σ))
+            ≡Ty[]⟨ elimTyOf-π₂ ⟩
+          elimTy A [ elimSub (π₁ σ) ]T∙
+            ≡Ty[ refl ]⟨ refl ⟩
+          elimTy A [ elimSub (π₁ σ) ]T∙
+            ∎
+  
+        go : elimSub σ ≡Sub[ ηπ≡ σ ] 
+             (elimSub (π₁ σ) , elimTm (π₂ σ) 
+              ∶[ tyOfπ₂ σ , elimTyOf-refl ]∙)
+        go = beginSub
+          elimSub {Δ = Δ , A} σ 
+            ≡Sub[ ηπ σ ]⟨ ηπ∙ (elimSub σ) ⟩
+          π₁∙ (elimSub {Δ = Δ , A} σ) , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl , tyOfπ₂∙ (elimSub σ) ]∙
+            ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub {Δ = Δ , A} σ) , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl ,_]∙) (Ty∙-is-set _ _ _ _ _ _) ⟩
+          elimSub (π₁ σ) , elimTm (π₂ σ) ∶[ tyOfπ₂ σ , elimTyOf-refl ]∙ ∎
+    in go i
 elimSub (Sub-is-set {Γ = Γ} {Δ = Δ} σ τ p q i j) =
   isSet→SquareP
     (λ i j → Sub∙-is-set (elimCtx Γ) (elimCtx Δ) (Sub-is-set σ τ p q i j))

@@ -167,7 +167,7 @@ module Foo where
           (q : tyOf (t [ τ ]t) ≡ A [ σ ∘ τ ]T)
         → Ford (tyOf t)
         → Ford (t [ τ ]t)
-        → Ford (tyOf (t [ τ ]t))
+        → Ford ((tyOf t) [ τ ]T)
         → Ford (A [ σ ]T)
         → Ford (A [ σ ∘ τ ]T)
         → (σ , t ∶[ p ]) ∘ τ ≡ (σ ∘ τ , t [ τ ]t ∶[ q ])
@@ -176,7 +176,9 @@ module Foo where
         → σ ≡ ∅S
       ηπℱ'
         : (σ : Sub Γ (Δ , A))
+        → Ford (Δ , A)
         → Ford (A [ π₁ σ ])
+        → Ford (π₁ σ)
         → Ford (π₂ σ)
         → σ ≡ (π₁ σ , π₂ σ ∶[ tyOfπ₂ σ ])
       Sub-is-set
@@ -210,12 +212,12 @@ module Foo where
     pattern βπ₁' {A} σ t p    = βπ₁ℱ' {A = A} σ t p ford
     pattern βπ₂' {A} σ t p q  = βπ₂ℱ' {A = A} σ t p q ford ford
     pattern ,∘' {A} σ t τ p q = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford
-    pattern ηπ' {Γ} {Δ} {A} σ = ηπℱ' {Γ} {Δ} {A} σ ford ford
+    pattern ηπ' {Γ} {Δ} {A} σ = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford
 
     pattern βπ₁≡ {A} σ t p i = βπ₁ℱ' {A = A} σ t p ford i
     pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford i
     pattern ,∘≡  {A} σ t τ p q i = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford i
-    pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford i
+    pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford i
 
     ∅       = ∅'
     _,_     = _,'_
