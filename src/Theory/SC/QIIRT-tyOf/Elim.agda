@@ -67,9 +67,9 @@ elimTm (βπ₂≡ {A} σ t p q i) = (beginTm[ βπ₂ σ t p q ]
   ) i
 elimTm ([idS]t t i)    = [idS]t∙ (elimTm t) i
 elimTm ([∘]t t σ τ i)  = [∘]t∙ (elimTm t) (elimSub σ) (elimSub τ) i
-elimTm {Γ = Γ} (Tm-is-set t u p q i j) =
+elimTm {Γ = Γ} (Tm-is-set≡ t u p q i j) =
   isSet→SquareP
-    (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set t u p q i j))
+    (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
     (λ j → elimTm (p j))
     (λ j → elimTm (q j))
     (λ j → elimTm t)
@@ -102,8 +102,11 @@ elimSub (,∘≡ {A} σ t τ p q i) =
 
 elimSub (η∅ σ i) = η∅∙ (elimSub σ) i
 elimSub (ηπℱ' {Γ} {Δ} {A} σ ford (ford {x = .(A [ π₁ σ ])}) ford ford i)
-  = let 
-        elimTyOf-π₂ : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy A [ π₁∙ (elimSub σ) ]T∙
+  -- Note: If we remove all the |{Δ = Δ , A}|s in this clause or replace them 
+  -- with  |{Δ = Δ Foo., A}|s we get a termination error. 
+  -- I think the root issue is
+  -- https://github.com/agda/agda/blob/348b95658c8105a0d88510be5ddcd81b16bae36d/src/full/Agda/Termination/TermCheck.hs#L1371
+  = let elimTyOf-π₂ : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy A [ π₁∙ (elimSub σ) ]T∙
         elimTyOf-π₂ = beginTy[ refl ]
           tyOf∙ (elimTm (π₂ σ))
             ≡Ty[]⟨ tyOfπ₂∙ (elimSub {Δ = Δ , A} σ) ⟩
@@ -125,8 +128,11 @@ elimSub (ηπℱ' {Γ} {Δ} {A} σ ford (ford {x = .(A [ π₁ σ ])}) ford ford
         go = beginSub
           elimSub {Δ = Δ , A} σ 
             ≡Sub[ ηπ σ ]⟨ ηπ∙ (elimSub σ) ⟩
-          π₁∙ (elimSub {Δ = Δ , A} σ) , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl , tyOfπ₂∙ (elimSub σ) ]∙
-            ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub {Δ = Δ , A} σ) , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl ,_]∙) (Ty∙-is-set _ _ _ _ _ _) ⟩
+          π₁∙ (elimSub {Δ = Δ , A} σ) 
+          , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl , tyOfπ₂∙ (elimSub σ) ]∙
+            ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub {Δ = Δ , A} σ) 
+                        , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl ,_]∙) 
+                              (Ty∙-is-set _ _ _ _ _ _) ⟩
           elimSub (π₁ σ) , elimTm (π₂ σ) ∶[ tyOfπ₂ σ , elimTyOf-refl ]∙ ∎
     in go i
 elimSub (Sub-is-set {Γ = Γ} {Δ = Δ} σ τ p q i j) =
@@ -163,11 +169,35 @@ elimTyOf' {Γ} ([∘]t t σ τ i) ford = {!!}
   --                         ≡ elimTy ([∘]T (tyOf t) σ τ i)}  
   --     (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
   --     (elimTyOf' ([∘]t t σ τ i0) ford) (elimTyOf' ([∘]t t σ τ i1) ford) i
-elimTyOf' {Γ} (Tm-is-set t u p q i j) ford = {!!}
-  -- = go i j where 
-  --   go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm (Tm-is-set t u p q i j)) 
-  --                                 ≡ elimTy (tyOf (Tm-is-set t u p q i j))}
-  --         (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
-  --                               (Ty∙-is-set (elimCtx Γ) _) _ _)) 
-  --         (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
-  --         (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
+elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
+  = let elimTm-is-set = isSet→SquareP
+          (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
+          (λ j → elimTm (p j))
+          (λ j → elimTm (q j))
+          (λ j → elimTm t)
+          (λ j → elimTm u)
+        
+        tyOf-is-set = 
+          Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i))
+
+        elimTy-is-set = isSet→SquareP
+          (λ i j → Ty∙-is-set (elimCtx Γ) 
+            (Ty-is-set (tyOf t) (tyOf u) 
+                       (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
+          -- These cases are quite problematic
+          -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
+          -- fording relatively easily, but it is less clear how to make 
+          -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
+          (λ j → elimTy ((cong tyOf p) j))
+          (λ j → elimTy ((cong tyOf q) j))
+          (λ j → elimTy (tyOf t))
+          (λ j → elimTy (tyOf u))
+
+  
+        go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
+                                      ≡ elimTy-is-set i j}
+          (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
+                                (Ty∙-is-set (elimCtx Γ) _) _ _)) 
+          (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
+          (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
+    in {!go i j!}

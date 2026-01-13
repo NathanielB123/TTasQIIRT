@@ -204,8 +204,12 @@ module Foo where
       [∘]t'
         : (t : Tm Θ) (σ : Sub Γ Δ) (τ : Sub Δ Θ)
         → t [ τ ]t [ σ ]t ≡ t [ τ ∘ σ ]t
-      Tm-is-set
-        : isSet (Tm Γ)
+      Tm-is-setℱ
+        -- : isSet (Tm Γ)
+        : (t u : Tm Γ) (p q : t ≡ u)
+        → Ford (tyOf t) → Ford (tyOf u) 
+        → Ford (cong tyOf p) → Ford (cong tyOf q) 
+        → p ≡ q
 
     pattern _[_]t' t σ = (t [ σ ]ℱ') ford ford
     pattern _,_∶[_]' σ t p = (σ , t ∶[ p ]ℱ') ford ford
@@ -218,6 +222,9 @@ module Foo where
     pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford i
     pattern ,∘≡  {A} σ t τ p q i = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford i
     pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford i
+
+    pattern Tm-is-set t u p q = Tm-is-setℱ t u p q ford ford ford ford
+    pattern Tm-is-set≡ t u p q i j = Tm-is-setℱ t u p q ford ford ford ford i j
 
     ∅       = ∅'
     _,_     = _,'_
@@ -249,7 +256,7 @@ module Foo where
     tyOf (βπ₂≡ σ t p q i)    = q i
     tyOf ([idS]t' t i)       = [idS]T {A = tyOf t} i
     tyOf ([∘]t' t σ τ i)     = [∘]T (tyOf t) σ τ i
-    tyOf (Tm-is-set t u p q i j) =
+    tyOf (Tm-is-set≡ t u p q i j) =
       Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j
 
     -- equations derivable from the computational behaviour of `tyOf`
