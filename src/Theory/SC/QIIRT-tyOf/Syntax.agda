@@ -200,11 +200,19 @@ module Foo where
         → Ford (π₂ (σ , t ∶[ p ]))
         → Ford (A [ π₁ (σ , t ∶[ p ]) ]T)
         → π₂ (σ , t ∶[ p ]) ≡ t
-      [idS]t'
+      [idS]tℱ'
         : (t : Tm Γ)
+        → Ford (tyOf t)
+        → Ford (tyOf t [ idS ])
+        → Ford (t [ idS ]t)
         → t ≡ t [ idS ]t
-      [∘]t'
+      [∘]tℱ'
         : (t : Tm Θ) (σ : Sub Γ Δ) (τ : Sub Δ Θ)
+        → Ford (tyOf t)
+        → Ford (tyOf t [ τ ] [ σ ])
+        → Ford (t [ τ ]t [ σ ]t)
+        → Ford (tyOf t [ τ ∘ σ ])
+        → Ford (t [ τ ∘ σ ]t)
         → t [ τ ]t [ σ ]t ≡ t [ τ ∘ σ ]t
       Tm-is-setℱ
         -- : isSet (Tm Γ)
@@ -220,11 +228,15 @@ module Foo where
     pattern βπ₂' {A} σ t p q  = βπ₂ℱ' {A = A} σ t p q ford ford ford ford
     pattern ,∘' {A} σ t τ p q = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford
     pattern ηπ' {Γ} {Δ} {A} σ = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford
+    pattern [idS]t' t = [idS]tℱ' t ford ford ford
+    pattern [∘]t' t σ τ = [∘]tℱ' t σ τ ford ford ford ford ford
 
     pattern βπ₁≡ {A} σ t p i = βπ₁ℱ' {A = A} σ t p ford i
     pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford ford ford i
     pattern ,∘≡  {A} σ t τ p q i = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford i
     pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford i
+    pattern [idS]t≡ t i = [idS]tℱ' t ford ford ford i
+    pattern [∘]t≡ t σ τ i = [∘]tℱ' t σ τ ford ford ford ford ford i
 
     pattern Tm-is-set t u p q = Tm-is-setℱ t u p q ford ford ford ford ford
     pattern Tm-is-set≡ t u p q i j = Tm-is-setℱ t u p q ford ford ford ford ford i j
@@ -257,8 +269,8 @@ module Foo where
     tyOf (t [ σ ]t')         = (tyOf t) [ σ ]T
     tyOf (π₂' {Γ} {Δ} {A} σ) = A [ π₁ σ ]T
     tyOf (βπ₂≡ σ t p q i)    = q i
-    tyOf ([idS]t' t i)       = [idS]T {A = tyOf t} i
-    tyOf ([∘]t' t σ τ i)     = [∘]T (tyOf t) σ τ i
+    tyOf ([idS]t≡ t i)       = [idS]T {A = tyOf t} i
+    tyOf ([∘]t≡ t σ τ i)     = [∘]T (tyOf t) σ τ i
     tyOf (Tm-is-set≡ t u p q i j) =
       Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j
 

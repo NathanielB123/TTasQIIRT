@@ -65,8 +65,8 @@ elimTm (βπ₂≡ {A} σ t p q i) = (beginTm[ βπ₂ σ t p q ]
     tyOf∙ (elimTm t)
     ∎)
   ) i
-elimTm ([idS]t t i)    = [idS]t∙ (elimTm t) i
-elimTm ([∘]t t σ τ i)  = [∘]t∙ (elimTm t) (elimSub σ) (elimSub τ) i
+elimTm ([idS]t≡ t i)   = [idS]t∙ (elimTm t) i
+elimTm ([∘]t≡ t σ τ i)  = [∘]t∙ (elimTm t) (elimSub σ) (elimSub τ) i
 elimTm {Γ = Γ} (Tm-is-set≡ t u p q i j) =
   isSet→SquareP
     (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
@@ -90,10 +90,14 @@ elimSub (,∘≡ {A} σ t τ p q i) =
   ,∘∙ {A = A} {A∙ = elimTy A} (elimSub σ) (elimTm t) (elimSub τ) p 
       (elimTyOf {A = _ [ σ ]} t ford p) q 
       -- Inlining 'elimTyOf' here helps to ensure termination
-      -- (elimTyOf {A = A [ σ ∘ τ ]} (t [ τ ]t) ford q)
+      -- (elimTyOf {A = A [ σ ∘ τ ]} (t [ τ ]t) (ford {x = (tyOf t) [ τ ]}) q)
       (beginTy
       tyOf∙ (elimTm t [ elimSub τ ]t∙)
         ≡Ty[]⟨ elimTyOf' (t [ τ ]t) ford ⟩
+      -- Note that |elimTy (tyOf (t [ τ ]t))| fails here. Termination checking
+      -- is super brittle!
+      -- I think the root cause is
+      -- https://github.com/agda/agda/blob/348b95658c8105a0d88510be5ddcd81b16bae36d/src/full/Agda/Termination/TermCheck.hs#L1371
       elimTy (tyOf t) [ elimSub τ ]T∙
         ≡Ty[ q ]⟨ cong elimTy q ⟩
       elimTy A [ elimSub σ ∘∙ elimSub τ ]T∙
@@ -101,25 +105,19 @@ elimSub (,∘≡ {A} σ t τ p q i) =
       i
 
 elimSub (η∅ σ i) = η∅∙ (elimSub σ) i
-elimSub (ηπℱ' {Γ} {Δ} {A} σ ford (ford {x = .(A [ π₁ σ ])}) ford ford i)
+elimSub (ηπ≡ {Γ} {Δ} {A} σ i)
   -- Note: If we remove all the |{Δ = Δ , A}|s in this clause or replace them 
   -- with  |{Δ = Δ Foo., A}|s we get a termination error. 
-  -- I think the root issue is
+  -- I think this is
   -- https://github.com/agda/agda/blob/348b95658c8105a0d88510be5ddcd81b16bae36d/src/full/Agda/Termination/TermCheck.hs#L1371
-  = let elimTyOf-π₂ : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy A [ π₁∙ (elimSub σ) ]T∙
-        elimTyOf-π₂ = beginTy[ refl ]
-          tyOf∙ (elimTm (π₂ σ))
-            ≡Ty[]⟨ tyOfπ₂∙ (elimSub {Δ = Δ , A} σ) ⟩
-          elimTy A [ π₁∙ (elimSub {Δ = Δ , A} σ) ]T∙
-            ∎
-
-        elimTyOf-refl : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy A [ elimSub (π₁ σ) ]T∙
+  -- again
+  = let elimTyOf-refl : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy (A [ π₁ σ ])
         elimTyOf-refl = beginTy
           tyOf∙ (elimTm (π₂ σ))
-            ≡Ty[]⟨ elimTyOf-π₂ ⟩
-          elimTy A [ elimSub (π₁ σ) ]T∙
+            ≡Ty[]⟨ elimTyOf' (π₂ σ) ford ⟩
+          elimTy (A [ π₁ σ ])
             ≡Ty[ refl ]⟨ refl ⟩
-          elimTy A [ elimSub (π₁ σ) ]T∙
+          elimTy (A [ π₁ σ ])
             ∎
   
         go : elimSub σ ≡Sub[ ηπ≡ σ ] 
@@ -133,7 +131,7 @@ elimSub (ηπℱ' {Γ} {Δ} {A} σ ford (ford {x = .(A [ π₁ σ ])}) ford ford
             ≡Sub[ refl ]⟨ cong (π₁∙ (elimSub {Δ = Δ , A} σ) 
                         , π₂∙ (elimSub {Δ = Δ , A} σ) ∶[ refl ,_]∙) 
                               (Ty∙-is-set _ _ _ _ _ _) ⟩
-          elimSub (π₁ σ) , elimTm (π₂ σ) ∶[ tyOfπ₂ σ , elimTyOf-refl ]∙ ∎
+          elimSub (π₁ σ) , elimTm (π₂ σ) ∶[ tyOfπ₂ σ , elimTyOf-refl  ]∙ ∎
     in go i
 elimSub (Sub-is-set {Γ = Γ} {Δ = Δ} σ τ p q i j) =
   isSet→SquareP
@@ -175,48 +173,50 @@ elimTyOf' {Γ} (βπ₂≡ {A} σ t p q i) ford
           (elimTyOf' (π₂ (σ Foo., t ∶[ p ])) (ford {x = A [ Foo.π₁ (σ Foo., t ∶[ p ]) ]}))
           (elimTyOf' t ford)
           i
-elimTyOf' {Γ} ([idS]t t i) ford = {!!}
-  -- = isProp→PathP {B = λ i → tyOf∙ (elimTm ([idS]t t i)) ≡ elimTy ([idS]T i)}  
-  --     (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
-  --     (elimTyOf' ([idS]t t i0) ford) (elimTyOf' ([idS]t t i1) ford) i
-elimTyOf' {Γ} ([∘]t t σ τ i) ford = {!!}
-  -- = isProp→PathP {B = λ i → tyOf∙ (elimTm ([∘]t t σ τ i)) 
-  --                         ≡ elimTy ([∘]T (tyOf t) σ τ i)}  
-  --     (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
-  --     (elimTyOf' ([∘]t t σ τ i0) ford) (elimTyOf' ([∘]t t σ τ i1) ford) i
+elimTyOf' {Γ} ([idS]t≡ t i) ford
+  = isProp→PathP {B = λ i → tyOf∙ ([idS]t∙ (elimTm t) i) ≡ [idS]T∙ (elimTy (tyOf t)) i}  
+      (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
+      (elimTyOf' t ford) (elimTyOf' (t [ Foo.idS ]t) (ford {x = tyOf t [ Foo.idS ]})) i
+elimTyOf' {Γ} ([∘]t≡ t σ τ i) ford
+  = isProp→PathP {B = λ i → tyOf∙ ([∘]t∙ (elimTm t) (elimSub σ) (elimSub τ) i) 
+                          ≡ [∘]T∙ (elimTy (tyOf t)) (elimSub σ) (elimSub τ) i}  
+      (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
+      (elimTyOf' (t Foo.[ τ ]t [ σ ]t) (ford {x = tyOf t [ τ ] [ σ ]})) 
+      (elimTyOf' (t [ τ Foo.∘ σ ]t) (ford {x = tyOf t [ τ Foo.∘ σ ]})) 
+      i
 elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
   = {!!}
--- elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
---   = let elimTm-is-set = isSet→SquareP
---           (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
---           (λ j → elimTm (p j))
---           (λ j → elimTm (q j))
---           (λ j → elimTm t)
---           (λ j → elimTm u)
+  -- = let elimTm-is-set = isSet→SquareP
+  --         (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
+  --         (λ j → elimTm (p j))
+  --         (λ j → elimTm (q j))
+  --         (λ j → elimTm t)
+  --         (λ j → elimTm u)
         
---         tyOf-is-set = 
---           Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i))
+  --       tyOf-is-set = 
+  --         Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i))
 
---         elimTy-is-set : ∀ i j → Ty∙ (elimCtx Γ) (tyOf-is-set i j)
---         elimTy-is-set = λ i j → elimTy {Γ = Γ} (Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j)
---         -- elimTy-is-set = isSet→SquareP
---         --   (λ i j → Ty∙-is-set (elimCtx Γ) 
---         --     (Ty-is-set (tyOf t) (tyOf u) 
---         --                (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
---         --   -- These cases are quite problematic
---         --   -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
---         --   -- fording relatively easily, but it is less clear how to make 
---         --   -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
---         --   (λ j → elimTy ((cong-noinline tyOf p) j))
---         --   (λ j → elimTy ((cong-noinline tyOf q) j))
---         --   (λ j → elimTy (tyOf t))
---         --   (λ j → elimTy (tyOf u))
+  --       elimTy-is-set : ∀ i j → Ty∙ (elimCtx Γ) (tyOf-is-set i j)
+  --       elimTy-is-set = λ i j → elimTy {Γ = Γ} (Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j)
+  --       -- elimTy-is-set = isSet→SquareP
+  --       --   (λ i j → Ty∙-is-set (elimCtx Γ) 
+  --       --     (Ty-is-set (tyOf t) (tyOf u) 
+  --       --                (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
+  --       --   -- These cases are quite problematic
+  --       --   -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
+  --       --   -- fording relatively easily, but it is less clear how to make 
+  --       --   -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
+  --       --   (λ j → elimTy ((cong-noinline tyOf p) j))
+  --       --   (λ j → elimTy ((cong-noinline tyOf q) j))
+  --       --   (λ j → elimTy (tyOf t))
+  --       --   (λ j → elimTy (tyOf u))
 
   
---         go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
---                                       ≡ elimTy-is-set i j}
---           (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
---                                 (Ty∙-is-set (elimCtx Γ) _) _ _)) 
---           (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
---           (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
---     in (go i j)
+  --       go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
+  --                                     ≡ elimTy-is-set i j}
+  --         (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
+  --                               (Ty∙-is-set (elimCtx Γ) _) _ _)) 
+  --         (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
+  --         (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
+  --   in {!go i j!} -- The only way I can think of to fix this is do the hcomps
+  --                  -- manually, but that is gonna suck...
