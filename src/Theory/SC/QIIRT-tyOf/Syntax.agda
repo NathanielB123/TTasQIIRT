@@ -197,6 +197,8 @@ module Foo where
         → (q : A [ π₁ (σ , t ∶[ p ]) ]T ≡ tyOf t)
         → Ford (tyOf t)
         → Ford (A [ σ ]T)
+        → Ford (π₂ (σ , t ∶[ p ]))
+        → Ford (A [ π₁ (σ , t ∶[ p ]) ]T)
         → π₂ (σ , t ∶[ p ]) ≡ t
       [idS]t'
         : (t : Tm Γ)
@@ -209,22 +211,23 @@ module Foo where
         : (t u : Tm Γ) (p q : t ≡ u)
         → Ford (tyOf t) → Ford (tyOf u) 
         → Ford (cong tyOf p) → Ford (cong tyOf q) 
+        → Ford (Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)))
         → p ≡ q
 
     pattern _[_]t' t σ = (t [ σ ]ℱ') ford ford
     pattern _,_∶[_]' σ t p = (σ , t ∶[ p ]ℱ') ford ford
     pattern βπ₁' {A} σ t p    = βπ₁ℱ' {A = A} σ t p ford
-    pattern βπ₂' {A} σ t p q  = βπ₂ℱ' {A = A} σ t p q ford ford
+    pattern βπ₂' {A} σ t p q  = βπ₂ℱ' {A = A} σ t p q ford ford ford ford
     pattern ,∘' {A} σ t τ p q = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford
     pattern ηπ' {Γ} {Δ} {A} σ = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford
 
     pattern βπ₁≡ {A} σ t p i = βπ₁ℱ' {A = A} σ t p ford i
-    pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford i
+    pattern βπ₂≡ {A} σ t p q i = βπ₂ℱ' {A = A} σ t p q ford ford ford ford i
     pattern ,∘≡  {A} σ t τ p q i = ,∘ℱ' {A = A} σ t τ p q ford ford ford ford ford i
     pattern ηπ≡ {Γ} {Δ} {A} σ i = ηπℱ' {Γ} {Δ} {A} σ ford ford ford ford i
 
-    pattern Tm-is-set t u p q = Tm-is-setℱ t u p q ford ford ford ford
-    pattern Tm-is-set≡ t u p q i j = Tm-is-setℱ t u p q ford ford ford ford i j
+    pattern Tm-is-set t u p q = Tm-is-setℱ t u p q ford ford ford ford ford
+    pattern Tm-is-set≡ t u p q i j = Tm-is-setℱ t u p q ford ford ford ford ford i j
 
     ∅       = ∅'
     _,_     = _,'_

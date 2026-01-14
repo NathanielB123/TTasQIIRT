@@ -156,10 +156,25 @@ elimTyOf' (π₂ {A = B} σ) ford = beginTy
     ≡Ty[]⟨ tyOfπ₂∙ (elimSub σ) ⟩
   elimTy B [ π₁∙ (elimSub σ) ]T∙
     ∎
-elimTyOf' {Γ} (βπ₂≡ σ t p q i) ford = {!!}
-  -- = isProp→PathP {B = λ i → tyOf∙ (elimTm (βπ₂≡ σ t p q i)) ≡ elimTy (q i)}  
-  --     (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
-  --     (elimTyOf' (βπ₂≡ σ t p q i0) ford) (elimTyOf' (βπ₂≡ σ t p q i1) ford) i
+elimTyOf' {Γ} (βπ₂≡ {A} σ t p q i) ford
+  = let elimTm-βπ₂≡ 
+          = (beginTm[ βπ₂ σ t p q ]
+              (βπ₂∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t ford p) q) 
+                (beginTy
+                elimTy A [ π₁∙ (elimSub σ , elimTm t ∶[ p , elimTyOf {A = A [ σ ]} t ford p ]∙) ]T∙
+                  ≡Ty[ cong (A [_]) (βπ₁ σ t p) ]⟨ (λ i → (elimTy A)
+                    [ βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t ford p) i ]T∙) ⟩
+                elimTy A [ elimSub σ ]T∙
+                  ≡Ty[ sym p ]⟨ (symP $ elimTyOf {A = A [ σ ]} t ford p) ⟩
+                tyOf∙ (elimTm t)
+                ∎)
+              )
+
+    in  isProp→PathP {B = λ i → tyOf∙ (elimTm-βπ₂≡ i) ≡ elimTy (q i)}  
+          (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
+          (elimTyOf' (π₂ (σ Foo., t ∶[ p ])) (ford {x = A [ Foo.π₁ (σ Foo., t ∶[ p ]) ]}))
+          (elimTyOf' t ford)
+          i
 elimTyOf' {Γ} ([idS]t t i) ford = {!!}
   -- = isProp→PathP {B = λ i → tyOf∙ (elimTm ([idS]t t i)) ≡ elimTy ([idS]T i)}  
   --     (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
@@ -170,34 +185,38 @@ elimTyOf' {Γ} ([∘]t t σ τ i) ford = {!!}
   --     (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
   --     (elimTyOf' ([∘]t t σ τ i0) ford) (elimTyOf' ([∘]t t σ τ i1) ford) i
 elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
-  = let elimTm-is-set = isSet→SquareP
-          (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
-          (λ j → elimTm (p j))
-          (λ j → elimTm (q j))
-          (λ j → elimTm t)
-          (λ j → elimTm u)
+  = {!!}
+-- elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
+--   = let elimTm-is-set = isSet→SquareP
+--           (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
+--           (λ j → elimTm (p j))
+--           (λ j → elimTm (q j))
+--           (λ j → elimTm t)
+--           (λ j → elimTm u)
         
-        tyOf-is-set = 
-          Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i))
+--         tyOf-is-set = 
+--           Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i))
 
-        elimTy-is-set = isSet→SquareP
-          (λ i j → Ty∙-is-set (elimCtx Γ) 
-            (Ty-is-set (tyOf t) (tyOf u) 
-                       (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
-          -- These cases are quite problematic
-          -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
-          -- fording relatively easily, but it is less clear how to make 
-          -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
-          (λ j → elimTy ((cong tyOf p) j))
-          (λ j → elimTy ((cong tyOf q) j))
-          (λ j → elimTy (tyOf t))
-          (λ j → elimTy (tyOf u))
+--         elimTy-is-set : ∀ i j → Ty∙ (elimCtx Γ) (tyOf-is-set i j)
+--         elimTy-is-set = λ i j → elimTy {Γ = Γ} (Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j)
+--         -- elimTy-is-set = isSet→SquareP
+--         --   (λ i j → Ty∙-is-set (elimCtx Γ) 
+--         --     (Ty-is-set (tyOf t) (tyOf u) 
+--         --                (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
+--         --   -- These cases are quite problematic
+--         --   -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
+--         --   -- fording relatively easily, but it is less clear how to make 
+--         --   -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
+--         --   (λ j → elimTy ((cong-noinline tyOf p) j))
+--         --   (λ j → elimTy ((cong-noinline tyOf q) j))
+--         --   (λ j → elimTy (tyOf t))
+--         --   (λ j → elimTy (tyOf u))
 
   
-        go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
-                                      ≡ elimTy-is-set i j}
-          (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
-                                (Ty∙-is-set (elimCtx Γ) _) _ _)) 
-          (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
-          (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
-    in {!go i j!}
+--         go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
+--                                       ≡ elimTy-is-set i j}
+--           (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
+--                                 (Ty∙-is-set (elimCtx Γ) _) _ _)) 
+--           (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
+--           (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
+--     in (go i j)
