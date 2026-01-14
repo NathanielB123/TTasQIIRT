@@ -185,38 +185,32 @@ elimTyOf' {Γ} ([∘]t≡ t σ τ i) ford
       (elimTyOf' (t [ τ Foo.∘ σ ]t) (ford {x = tyOf t [ τ Foo.∘ σ ]})) 
       i
 elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
-  = {!!}
-  -- = let elimTm-is-set = isSet→SquareP
-  --         (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
-  --         (λ j → elimTm (p j))
-  --         (λ j → elimTm (q j))
-  --         (λ j → elimTm t)
-  --         (λ j → elimTm u)
+  = let elimTm-is-set = isSet→SquareP
+          (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
+          (λ j → elimTm (p j))
+          (λ j → elimTm (q j))
+          (λ j → elimTm t)
+          (λ j → elimTm u)
         
-  --       tyOf-is-set = 
-  --         Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i))
-
-  --       elimTy-is-set : ∀ i j → Ty∙ (elimCtx Γ) (tyOf-is-set i j)
-  --       elimTy-is-set = λ i j → elimTy {Γ = Γ} (Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j)
-  --       -- elimTy-is-set = isSet→SquareP
-  --       --   (λ i j → Ty∙-is-set (elimCtx Γ) 
-  --       --     (Ty-is-set (tyOf t) (tyOf u) 
-  --       --                (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
-  --       --   -- These cases are quite problematic
-  --       --   -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
-  --       --   -- fording relatively easily, but it is less clear how to make 
-  --       --   -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
-  --       --   (λ j → elimTy ((cong-noinline tyOf p) j))
-  --       --   (λ j → elimTy ((cong-noinline tyOf q) j))
-  --       --   (λ j → elimTy (tyOf t))
-  --       --   (λ j → elimTy (tyOf u))
+        elimTy-is-set = isSet→SquareP
+          (λ i j → Ty∙-is-set (elimCtx Γ) 
+            (Ty-is-set (tyOf t) (tyOf u) 
+                       (λ i → tyOf (p i)) (λ i → tyOf (q i)) i j))
+          -- These cases are quite problematic
+          -- We can make |tyOf t| smaller than |Tm-is-set≡ t u p q i j| with
+          -- fording relatively easily, but it is less clear how to make 
+          -- |(cong tyOf p) j′| smaller than |Tm-is-set≡ t u p q i j|
+          (λ j → elimTy (tyOf (p j)))
+          (λ j → elimTy (tyOf (q j)))
+          (λ j → elimTy (tyOf t))
+          (λ j → elimTy (tyOf u))
 
   
-  --       go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
-  --                                     ≡ elimTy-is-set i j}
-  --         (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
-  --                               (Ty∙-is-set (elimCtx Γ) _) _ _)) 
-  --         (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
-  --         (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
-  --   in {!go i j!} -- The only way I can think of to fix this is do the hcomps
-  --                  -- manually, but that is gonna suck...
+        go = isSet→SquareP {A = λ i j → tyOf∙ (elimTm-is-set i j) 
+                                      ≡ elimTy-is-set i j}
+          (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
+                                (Ty∙-is-set (elimCtx Γ) _) _ _)) 
+          (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
+          (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
+    in {!go i j!} -- The only idea I have for fixing this is do the hcomps
+                   -- manually, but that is gonna suck...
