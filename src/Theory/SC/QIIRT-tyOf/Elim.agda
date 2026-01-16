@@ -19,14 +19,13 @@ elimTy   : (A : Ty Γ) → Ty∙ (elimCtx Γ) A
 elimTm   : (t : Tm Γ) → Tm∙ (elimCtx Γ) t
 elimSub  : (σ : Sub Γ Δ) → Sub∙ (elimCtx Γ) (elimCtx Δ) σ
 
-elimTyOf' : (t : Tm Γ) → Ford (tyOf t)
-          → tyOf∙ (elimTm t) ≡ elimTy (tyOf t)
+elimTyOf' : (t : Tm Γ) → tyOf∙ (elimTm t) ≡ elimTy (tyOf t)
 
-elimTyOf : (t : Tm Γ) → Ford (tyOf t) → (p : tyOf t ≡ A)
-  →  tyOf∙ (elimTm t) ≡Ty[ p ] elimTy A
-elimTyOf {A = A} t ℱ p = beginTy
+elimTyOf : (t : Tm Γ) (p : tyOf t ≡ A)
+         → tyOf∙ (elimTm t) ≡Ty[ p ] elimTy A
+elimTyOf {A = A} t p = beginTy
   tyOf∙ (elimTm t)
-    ≡Ty[]⟨ elimTyOf' t ℱ ⟩
+    ≡Ty[]⟨ elimTyOf' t ⟩
   elimTy (tyOf t)
     ≡Ty[ p ]⟨ cong elimTy p ⟩
   elimTy A
@@ -55,13 +54,13 @@ elimTy {Γ = Γ} (Ty-is-set A B p q i j) =
 elimTm (t [ σ ]t) = elimTm t [ elimSub σ ]t∙
 elimTm (π₂ σ)    = π₂∙ (elimSub σ)
 elimTm (βπ₂≡ {A} σ t p q i) = (beginTm[ βπ₂ σ t p q ]
-  (βπ₂∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t ford p) q) 
+  (βπ₂∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t p) q) 
     (beginTy
-    elimTy A [ π₁∙ (elimSub σ , elimTm t ∶[ p , elimTyOf {A = A [ σ ]} t ford p ]∙) ]T∙
+    elimTy A [ π₁∙ (elimSub σ , elimTm t ∶[ p , elimTyOf {A = A [ σ ]} t p ]∙) ]T∙
       ≡Ty[ cong (A [_]) (βπ₁ σ t p) ]⟨ (λ i → (elimTy A)
-        [ βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t ford p) i ]T∙) ⟩
+        [ βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t p) i ]T∙) ⟩
     elimTy A [ elimSub σ ]T∙
-      ≡Ty[ sym p ]⟨ (symP $ elimTyOf {A = A [ σ ]} t ford p) ⟩
+      ≡Ty[ sym p ]⟨ (symP $ elimTyOf {A = A [ σ ]} t p) ⟩
     tyOf∙ (elimTm t)
     ∎)
   ) i
@@ -77,23 +76,23 @@ elimTm {Γ = Γ} (Tm-is-set≡ t u p q i j) =
 
 elimSub ∅              = ∅S∙
 elimSub {Γ = Γ} {Δ = Δ} (σ , t ∶[ p ]) =
-  elimSub σ , elimTm t ∶[ p , elimTyOf {A = _ [ σ ]} t ford p ]∙
+  elimSub σ , elimTm t ∶[ p , elimTyOf {A = _ [ σ ]} t p ]∙
 elimSub idS            = idS∙ 
 elimSub (σ ∘ τ)       = elimSub σ ∘∙ elimSub τ
 elimSub (π₁ σ)        = π₁∙ (elimSub σ)
 elimSub (βπ₁≡ σ t p i) 
-  = βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = _ [ σ ]} t ford p) i
+  = βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = _ [ σ ]} t p) i
 elimSub ((idS∘ σ) i)  = (idS∘∙ elimSub σ) i
 elimSub ((σ ∘idS) i)  = (elimSub σ ∘idS∙) i
 elimSub (assocS σ τ γ i) = assocS∙ (elimSub σ) (elimSub τ) (elimSub γ) i
 elimSub (,∘≡ {A} σ t τ p q i) =
   ,∘∙ {A = A} {A∙ = elimTy A} (elimSub σ) (elimTm t) (elimSub τ) p 
-      (elimTyOf {A = _ [ σ ]} t ford p) q 
+      (elimTyOf {A = _ [ σ ]} t p) q 
       -- Inlining 'elimTyOf' here helps to ensure termination
-      -- (elimTyOf {A = A [ σ ∘ τ ]} (t [ τ ]t) (ford {x = (tyOf t) [ τ ]}) q)
+      -- (elimTyOf {A = A [ σ ∘ τ ]} (t [ τ ]t) q)
       (beginTy
       tyOf∙ (elimTm t [ elimSub τ ]t∙)
-        ≡Ty[]⟨ elimTyOf' (t [ τ ]t) ford ⟩
+        ≡Ty[]⟨ elimTyOf' (t [ τ ]t) ⟩
       -- Note that |elimTy (tyOf (t [ τ ]t))| fails here. Termination checking
       -- is super brittle!
       -- I think the root cause is
@@ -114,7 +113,7 @@ elimSub (ηπ≡ {Γ} {Δ} {A} σ i)
   = let elimTyOf-refl : tyOf∙ (elimTm (π₂ σ)) ≡ elimTy (A [ π₁ σ ])
         elimTyOf-refl = beginTy
           tyOf∙ (elimTm (π₂ σ))
-            ≡Ty[]⟨ elimTyOf' (π₂ σ) ford ⟩
+            ≡Ty[]⟨ elimTyOf' (π₂ σ) ⟩
           elimTy (A [ π₁ σ ])
             ≡Ty[ refl ]⟨ refl ⟩
           elimTy (A [ π₁ σ ])
@@ -141,50 +140,50 @@ elimSub (Sub-is-set {Γ = Γ} {Δ = Δ} σ τ p q i j) =
     (λ j → elimSub σ)
     (λ j → elimSub τ) i j
 
-elimTyOf' {Γ} (t [ σ ]t) ford = beginTy
+elimTyOf' {Γ} (t [ σ ]t) = beginTy
   tyOf∙ (elimTm t [ elimSub σ ]t∙)
     ≡Ty[]⟨ tyOf[]∙ ⟩
   tyOf∙ (elimTm t) [ elimSub σ ]T∙
-    ≡Ty[]⟨ (λ i → elimTyOf' t ford i [ elimSub σ ]T∙) ⟩
+    ≡Ty[]⟨ (λ i → elimTyOf' t i [ elimSub σ ]T∙) ⟩
   elimTy (tyOf t) [ elimSub σ ]T∙
     ∎
 
-elimTyOf' (π₂ {A = B} σ) ford = beginTy
+elimTyOf' (π₂ {A = B} σ) = beginTy
   tyOf∙ (elimTm (π₂ σ))
     ≡Ty[]⟨ tyOfπ₂∙ (elimSub σ) ⟩
   elimTy B [ π₁∙ (elimSub σ) ]T∙
     ∎
-elimTyOf' {Γ} (βπ₂≡ {A} σ t p q i) ford
+elimTyOf' {Γ} (βπ₂≡ {A} σ t p q i)
   = let elimTm-βπ₂≡ 
           = (beginTm[ βπ₂ σ t p q ]
-              (βπ₂∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t ford p) q) 
+              (βπ₂∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t p) q) 
                 (beginTy
-                elimTy A [ π₁∙ (elimSub σ , elimTm t ∶[ p , elimTyOf {A = A [ σ ]} t ford p ]∙) ]T∙
+                elimTy A [ π₁∙ (elimSub σ , elimTm t ∶[ p , elimTyOf {A = A [ σ ]} t p ]∙) ]T∙
                   ≡Ty[ cong (A [_]) (βπ₁ σ t p) ]⟨ (λ i → (elimTy A)
-                    [ βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t ford p) i ]T∙) ⟩
+                    [ βπ₁∙ (elimSub σ) (elimTm t) p (elimTyOf {A = A [ σ ]} t p) i ]T∙) ⟩
                 elimTy A [ elimSub σ ]T∙
-                  ≡Ty[ sym p ]⟨ (symP $ elimTyOf {A = A [ σ ]} t ford p) ⟩
+                  ≡Ty[ sym p ]⟨ (symP $ elimTyOf {A = A [ σ ]} t p) ⟩
                 tyOf∙ (elimTm t)
                 ∎)
               )
 
     in  isProp→PathP {B = λ i → tyOf∙ (elimTm-βπ₂≡ i) ≡ elimTy (q i)}  
           (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
-          (elimTyOf' (π₂ (σ Foo., t ∶[ p ])) (ford {x = A [ Foo.π₁ (σ Foo., t ∶[ p ]) ]}))
-          (elimTyOf' t ford)
+          (elimTyOf' (π₂ (σ Foo., t ∶[ p ])))
+          (elimTyOf' t)
           i
-elimTyOf' {Γ} ([idS]t≡ t i) ford
+elimTyOf' {Γ} ([idS]t≡ t i)
   = isProp→PathP {B = λ i → tyOf∙ ([idS]t∙ (elimTm t) i) ≡ [idS]T∙ (elimTy (tyOf t)) i}  
       (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
-      (elimTyOf' t ford) (elimTyOf' (t [ Foo.idS ]t) (ford {x = tyOf t [ Foo.idS ]})) i
-elimTyOf' {Γ} ([∘]t≡ t σ τ i) ford
+      (elimTyOf' t) (elimTyOf' (t [ Foo.idS ]t)) i
+elimTyOf' {Γ} ([∘]t≡ t σ τ i)
   = isProp→PathP {B = λ i → tyOf∙ ([∘]t∙ (elimTm t) (elimSub σ) (elimSub τ) i) 
                           ≡ [∘]T∙ (elimTy (tyOf t)) (elimSub σ) (elimSub τ) i}  
       (λ j → Ty∙-is-set (elimCtx Γ) _ _ _)
-      (elimTyOf' (t Foo.[ τ ]t [ σ ]t) (ford {x = tyOf t [ τ ] [ σ ]})) 
-      (elimTyOf' (t [ τ Foo.∘ σ ]t) (ford {x = tyOf t [ τ Foo.∘ σ ]})) 
+      (elimTyOf' (t Foo.[ τ ]t [ σ ]t)) 
+      (elimTyOf' (t [ τ Foo.∘ σ ]t)) 
       i
-elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
+elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) 
   = let elimTm-is-set = isSet→SquareP
           (λ i j → Tm∙-is-set (elimCtx Γ) (Tm-is-set≡ t u p q i j))
           (λ j → elimTm (p j))
@@ -210,7 +209,8 @@ elimTyOf' {Γ} (Tm-is-set≡ t u p q i j) ford
                                       ≡ elimTy-is-set i j}
           (λ i j → isProp→isSet (isOfHLevelPathP' {A = λ i → Ty∙ (elimCtx Γ) _} 1 
                                 (Ty∙-is-set (elimCtx Γ) _) _ _)) 
-          (λ j → elimTyOf' (p j) ford) (λ j → elimTyOf' (q j) ford)
-          (λ j → elimTyOf' t ford) (λ j → elimTyOf' u ford)
-    in {!go i j!} -- The only idea I have for fixing this is do the hcomps
-                   -- manually, but that is gonna suck...
+          (λ j → elimTyOf' (p j)) (λ j → elimTyOf' (q j))
+          (λ j → elimTyOf' t) (λ j → elimTyOf' u)
+    -- The only idea I have for fixing this is do the hcomps manually, but that 
+    -- is gonna suck (and I'm not sure it would even help)...
+    in {!go i j!} 

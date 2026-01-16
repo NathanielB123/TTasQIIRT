@@ -214,12 +214,10 @@ module Foo where
         → Ford (tyOf t [ τ ∘ σ ])
         → Ford (t [ τ ∘ σ ]t)
         → t [ τ ]t [ σ ]t ≡ t [ τ ∘ σ ]t
-      Tm-is-setℱ
+      Tm-is-setℱ'
         -- : isSet (Tm Γ)
         : (t u : Tm Γ) (p q : t ≡ u)
         → Ford (tyOf t) → Ford (tyOf u) 
-        → Ford (cong tyOf p) → Ford (cong tyOf q) 
-        → Ford (Ty-is-set (tyOf t) (tyOf u) (λ i → tyOf (p i)) (λ i → tyOf (q i)))
         → p ≡ q
 
     pattern _[_]t' t σ = (t [ σ ]ℱ') ford ford
@@ -238,8 +236,8 @@ module Foo where
     pattern [idS]t≡ t i = [idS]tℱ' t ford ford ford i
     pattern [∘]t≡ t σ τ i = [∘]tℱ' t σ τ ford ford ford ford ford i
 
-    pattern Tm-is-set t u p q = Tm-is-setℱ t u p q ford ford ford ford ford
-    pattern Tm-is-set≡ t u p q i j = Tm-is-setℱ t u p q ford ford ford ford ford i j
+    pattern Tm-is-set t u p q = Tm-is-setℱ' t u p q ford ford
+    pattern Tm-is-set≡ t u p q i j = Tm-is-setℱ' t u p q ford ford i j
 
     ∅       = ∅'
     _,_     = _,'_
